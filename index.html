@@ -4,150 +4,286 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fuel Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 40px;
-            background-color: #f4f7f6;
-            color: #333;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2 {
-            color: #2c3e50;
-            text-align: center;
-        }
-        form {
-            display: grid;
-            gap: 15px;
-            margin-bottom: 25px;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-        label {
-            font-weight: bold;
-        }
-        input[type="number"], select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        input[type="submit"] {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        input[type="submit"]:hover {
-            background-color: #2980b9;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 25px;
-            
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #ecf0f1;
-            color: #2c3e50;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .delete-button {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 8px;
-        }
-        .delete-button:hover {
-            background-color: #c0392b;
-        }
-        .message-success {
-            color: #27ae60;
-            font-weight: bold;
-            text-align: center;
-        }
-        .message-error {
-            color: #e74c3c;
-            font-weight: bold;
-            text-align: center;
+            font-family: 'Inter', sans-serif;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Fuel Refill Submission</h1>
-        <form action="/" method="post">
-            <label for="truck">Truck:</label>
-            <select id="truck" name="truck">
-                {% for truck in trucks %}
-                    <option value="{{ truck }}">{{ truck }}</option>
-                {% endfor %}
-            </select>
+<body class="bg-gray-100 text-gray-800">
 
-            <label for="fuel">Fuel amount (liters):</label>
-            <input type="number" id="fuel" name="fuel" step="0.25" required>
+<div id="app" class="max-w-2xl mx-auto p-4 md:p-8">
+    <header class="text-center my-8">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-blue-800 mb-2">Fuel Tracker</h1>
+        <p class="text-lg md:text-xl text-gray-600">Enter your fuel records to keep track of expenses.</p>
+    </header>
 
-            <label for="cost">Cost (ETB):</label>
-            <input type="number" id="cost" name="cost" step="0.01" required>
+    <!-- Modal for messages and confirmation -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-2xl max-w-sm w-full">
+            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+            <p id="modal-message" class="mb-6"></p>
+            <div id="modal-actions" class="flex justify-end space-x-2">
+                <button id="modal-cancel-btn" class="py-2 px-4 rounded-lg bg-gray-200 text-gray-700 font-bold transition duration-200 hover:bg-gray-300">Cancel</button>
+                <button id="modal-ok-btn" class="py-2 px-4 rounded-lg bg-blue-600 text-white font-bold transition duration-200 hover:bg-blue-700">OK</button>
+            </div>
+        </div>
+    </div>
 
-            <input type="submit" value="Submit">
+    <!-- User Information Card -->
+    <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+        <h2 class="text-2xl font-bold mb-4">Your User ID</h2>
+        <p class="text-sm font-mono break-all text-gray-500" id="user-id">Loading...</p>
+    </div>
+
+    <!-- Input Form -->
+    <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+        <h2 class="text-2xl font-bold mb-4">Add New Record</h2>
+        <form id="fuel-form">
+            <div class="mb-4">
+                <label for="truck-name" class="block text-sm font-medium text-gray-700 mb-1">Truck Name</label>
+                <input type="text" id="truck-name" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., Truck 1">
+            </div>
+            <div class="mb-4">
+                <label for="fuel-amount" class="block text-sm font-medium text-gray-700 mb-1">Fuel Amount (Liters)</label>
+                <input type="number" step="0.01" min="0" id="fuel-amount" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., 500">
+            </div>
+            <div class="mb-6">
+                <label for="cost" class="block text-sm font-medium text-gray-700 mb-1">Cost (ETB)</label>
+                <input type="number" step="0.01" min="0" id="cost" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., 25000">
+            </div>
+            <button type="submit" class="w-full py-3 px-4 rounded-lg font-bold text-white transition duration-300 transform hover:scale-105 bg-blue-600 hover:bg-blue-700">Add Fuel Record</button>
         </form>
-        
-        <h2>Fuel refill history</h2>
+    </div>
 
-        <table>
-            <thead>
+    <!-- Fuel History Table -->
+    <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+        <h2 class="text-2xl font-bold mb-4">Fuel Refill History</h2>
+        <div id="loading" class="text-center text-gray-500 py-8">Loading records...</div>
+        <div id="no-records" class="text-center text-gray-500 py-8 hidden">No fuel records found. Add one above!</div>
+        <table id="fuel-table" class="min-w-full hidden">
+            <thead class="bg-gray-50">
                 <tr>
-                    <th>ID</th>
-                    <th>Truck</th>
-                    <th>Fuel</th>
-                    <th>Cost</th>
-                    <th>Date</th>
-                    <th>Action</th>
+                    <th class="px-4 py-2 text-left font-bold text-sm text-gray-600 uppercase rounded-tl-lg">Truck</th>
+                    <th class="px-4 py-2 text-left font-bold text-sm text-gray-600 uppercase">Fuel (Liters)</th>
+                    <th class="px-4 py-2 text-left font-bold text-sm text-gray-600 uppercase">Cost (ETB)</th>
+                    <th class="px-4 py-2 text-left font-bold text-sm text-gray-600 uppercase">Date</th>
+                    <th class="px-4 py-2 text-left font-bold text-sm text-gray-600 uppercase rounded-tr-lg">Action</th>
                 </tr>
             </thead>
-            <tbody>
-                {% for refill in refills %}
-                <tr>
-                    <td>{{ refill.ID }}</td>
-                    <td>{{ refill.Truck }}</td>
-                    <td>{{ refill.Fuel }}</td>
-                    <td>{{ refill.Cost }}</td>
-                    <td>{{ refill.Date }}</td>
-                    <td>
-                        <form action="{{ url_for('delete', id=refill['id']) }}" method="post">
-                            <input type="hidden" name="id" value="{{ refill.ID }}">
-                            <input type="submit" value="Delete" class="delete-button">
-                        </form>
-
-                    </td>
-                </tr>
-                {% endfor %}
+            <tbody id="fuel-table-body" class="bg-white divide-y divide-gray-200">
+                <!-- Records will be dynamically inserted here -->
             </tbody>
         </table>
     </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    setLogLevel('debug');
+
+    // --- Firebase Initialization and Authentication ---
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    if (!firebaseConfig.apiKey) {
+        showModal('Error', 'Firebase configuration is missing. Please check your setup.');
+        console.error('Firebase configuration is missing.');
+        throw new Error('Firebase configuration is missing.');
+    }
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let userId = null;
+
+    // Custom Modal implementation
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    const modalOkBtn = document.getElementById('modal-ok-btn');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+    function showModal(title, message, isConfirm = false) {
+        return new Promise(resolve => {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modal.classList.remove('hidden');
+
+            if (isConfirm) {
+                modalCancelBtn.classList.remove('hidden');
+                modalOkBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    resolve(true);
+                };
+                modalCancelBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    resolve(false);
+                };
+            } else {
+                modalCancelBtn.classList.add('hidden');
+                modalOkBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    resolve(true);
+                };
+            }
+        });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            userId = user.uid;
+            document.getElementById('user-id').textContent = `User ID: ${userId}`;
+            console.log('User signed in with UID:', userId);
+            loadFuelRecords();
+        } else {
+            console.log("No user signed in. Attempting to sign in.");
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Failed to sign in:", error);
+                showModal('Authentication Error', 'Failed to sign in. Please try again.');
+            }
+        }
+    });
+
+    // --- Firestore Operations ---
+    const getRecordsCollectionRef = () => {
+        if (!userId) {
+            console.error('User not authenticated. Cannot get collection reference.');
+            return null;
+        }
+        return collection(db, 'artifacts', appId, 'users', userId, 'fuelRecords');
+    };
+
+    const loadFuelRecords = () => {
+        const recordsRef = getRecordsCollectionRef();
+        if (!recordsRef) return;
+
+        const q = query(recordsRef);
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const records = [];
+            querySnapshot.forEach((doc) => {
+                records.push({ id: doc.id, ...doc.data() });
+            });
+            displayRecords(records);
+        }, (error) => {
+            console.error("Error fetching documents: ", error);
+            showModal('Data Error', 'Failed to load fuel records.');
+        });
+    };
+
+    const addFuelRecord = async (record) => {
+        const recordsRef = getRecordsCollectionRef();
+        if (!recordsRef) return;
+
+        try {
+            await addDoc(recordsRef, record);
+            console.log("Record added successfully.");
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            showModal('Save Error', 'Failed to add the fuel record.');
+        }
+    };
+
+    const deleteFuelRecord = async (recordId) => {
+        const recordsRef = getRecordsCollectionRef();
+        if (!recordsRef) return;
+
+        const confirm = await showModal('Confirm Deletion', 'Are you sure you want to delete this fuel record?', true);
+        if (confirm) {
+            try {
+                await deleteDoc(doc(recordsRef, recordId));
+                console.log("Record deleted successfully.");
+            } catch (error) {
+                console.error("Error deleting document: ", error);
+                showModal('Deletion Error', 'Failed to delete the fuel record.');
+            }
+        }
+    };
+
+    // --- UI and Event Handling ---
+    const fuelForm = document.getElementById('fuel-form');
+    const truckNameInput = document.getElementById('truck-name');
+    const fuelAmountInput = document.getElementById('fuel-amount');
+    const costInput = document.getElementById('cost');
+    const tableBody = document.getElementById('fuel-table-body');
+    const loadingMessage = document.getElementById('loading');
+    const noRecordsMessage = document.getElementById('no-records');
+    const fuelTable = document.getElementById('fuel-table');
+
+    fuelForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const truckName = truckNameInput.value;
+        const fuelAmount = parseFloat(fuelAmountInput.value);
+        const cost = parseFloat(costInput.value);
+        const date = new Date().toISOString();
+
+        const newRecord = {
+            truckName,
+            fuelAmount,
+            cost,
+            date,
+            userId,
+        };
+
+        addFuelRecord(newRecord);
+
+        // Clear the form
+        fuelForm.reset();
+    });
+
+    function displayRecords(records) {
+        tableBody.innerHTML = '';
+        loadingMessage.classList.add('hidden');
+        if (records.length === 0) {
+            noRecordsMessage.classList.remove('hidden');
+            fuelTable.classList.add('hidden');
+        } else {
+            noRecordsMessage.classList.add('hidden');
+            fuelTable.classList.remove('hidden');
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                const formattedDate = new Date(record.date).toLocaleDateString();
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 border-t border-gray-200">${record.truckName}</td>
+                    <td class="px-4 py-3 border-t border-gray-200">${record.fuelAmount.toFixed(2)} L</td>
+                    <td class="px-4 py-3 border-t border-gray-200">${record.cost.toFixed(2)} ETB</td>
+                    <td class="px-4 py-3 border-t border-gray-200">${formattedDate}</td>
+                    <td class="px-4 py-3 border-t border-gray-200">
+                        <button class="w-auto py-2 px-4 rounded-lg font-bold text-white transition duration-300 transform hover:scale-105 bg-red-500 hover:bg-red-600 text-sm" data-id="${record.id}">Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Add event listeners to new delete buttons
+            document.querySelectorAll('button[data-id]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const recordId = e.target.getAttribute('data-id');
+                    deleteFuelRecord(recordId);
+                });
+            });
+        }
+    }
+</script>
+
 </body>
 </html>
-    
